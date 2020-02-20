@@ -11,9 +11,7 @@ const LocalStrategy = require("passport-local").Strategy;
 const flash = require("connect-flash");
 const User = require("./models/Users");
 
-
 const indexRouter = require("./routes/index");
-const usersRouter = require("./routes/users");
 const authRouter = require("./routes/auth");
 
 const app = express();
@@ -29,17 +27,11 @@ mongoose
     console.error("Error connecting to mongo", err);
   });
 
-// Routes
-app.use("/", indexRouter);
-app.use("/users", usersRouter);
-app.use("/signup", authRouter);
-app.use("/login", authRouter);
-app.use("/profile-page", authRouter)
-
 // view engine setup
 app.set("views", path.join(__dirname, "views"));
-app.set("view engine", "jade");
+app.set("view engine", "hbs");
 
+app.use(flash());
 app.use(logger("dev"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
@@ -53,47 +45,11 @@ app.use(
   })
 );
 
-passport.serializeUser((user, cb) => {
-  cb(null, user._id);
-});
-
-passport.deserializeUser((id, cb) => {
-  User.findById(id, (err, user) => {
-    if (err) {
-      return cb(err);
-    }
-    cb(null, user);
-  });
-});
-
-app.use(flash());
-passport.use(
-  new LocalStrategy(
-    {
-      passReqToCallback: true
-    },
-    (req, username, password, next) => {
-      User.findOne({ username }, (err, user) => {
-        if (err) {
-          return next(err);
-        }
-        if (!user) {
-          return next(null, false, { message: "Incorrect username" });
-        }
-        if (!bcrypt.compareSync(password, user.password)) {
-          return next(null, false, { message: "Incorrect password" });
-        }
-
-        return next(null, user);
-      });
-    }
-  )
-);
-
 app.use(passport.initialize());
 app.use(passport.session());
 
-
+app.use("/", authRouter);
+app.use("/index", indexRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
